@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# encoding: utf-8
 # Copyright 2009-2014 MongoDB, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
@@ -19,11 +21,14 @@
    :doc:`/examples/high_availability` for an example of how to connect
    to a replica set, or specify a list of mongos instances for automatic
    failover.
+   # 让我看/examples/high_availability 里链接replicaSet的例子
+   # 或者直接 MongoClient('mongodb://mongodb1.xxx.asia:27017,mongodb2.xxx.asia:27017,mongodb3.xxx.asia:27017') 自动failover
 
 To get a :class:`~pymongo.database.Database` instance from a
 :class:`MongoClient` use either dictionary-style or attribute-style
 access:
 
+    # 两种获取db实例的方式
 .. doctest::
 
   >>> from pymongo import MongoClient
@@ -33,7 +38,7 @@ access:
   >>> c['test-database']
   Database(MongoClient('localhost', 27017), u'test-database')
 """
-
+import logging
 import datetime
 import random
 import socket
@@ -67,6 +72,8 @@ EMPTY = b("")
 def _partition_node(node):
     """Split a host:port string returned from mongod/s into
     a (host, int(port)) pair needed for socket.connect().
+    # 分隔节点字符串
+    # 获取host，post
     """
     host = node
     port = 27017
@@ -237,6 +244,8 @@ class MongoClient(common.BaseObject):
         if not isinstance(port, int):
             raise TypeError("port must be an instance of int")
 
+        logging.warning("host: %s, port: %s" % (host, port))
+        #raise TypeError("host: %s, port: %s" % host, port)
         seeds = set()
         username = None
         password = None
@@ -244,7 +253,7 @@ class MongoClient(common.BaseObject):
         opts = {}
         for entity in host:
             if "://" in entity:
-                if entity.startswith("mongodb://"):
+                if entity.startswith("mongodb://"): # mongodb:// 开头的mongos instance string
                     res = uri_parser.parse_uri(entity, port)
                     seeds.update(res["nodelist"])
                     username = res["username"] or username
