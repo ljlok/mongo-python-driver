@@ -270,8 +270,8 @@ VALIDATORS = {
     'ssl_certfile': validate_readable,
     'ssl_cert_reqs': validate_cert_reqs,
     'ssl_ca_certs': validate_readable,
-    'readpreference': validate_read_preference,
-    'read_preference': validate_read_preference,
+    'readpreference': validate_read_preference, # 这两个参数有啥区别？
+    'read_preference': validate_read_preference, # 貌似没啥区别用的一个校验方法
     'readpreferencetags': validate_tag_sets,
     'tag_sets': validate_tag_sets,
     'secondaryacceptablelatencyms': validate_positive_float,
@@ -303,6 +303,8 @@ def validate(option, value):
     """
     lower = option.lower()
     validator = VALIDATORS.get(lower, raise_config_error)
+    # 维护了一个VALIDATORS字典,get到每一个参数名称对应的校验方法
+    # 找不到raise Error
     value = validator(option, value)
     return lower, value
 
