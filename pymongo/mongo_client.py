@@ -205,6 +205,7 @@ class MongoClient(common.BaseObject):
             tag sets: ``[{'dc': 'ny'}, {'dc': 'la'}, {}]``. A final, empty tag
             set, ``{}``, means "read from any member that matches the mode,
             ignoring tags.
+            提供一个优先级别列表
 
           | **SSL configuration:**
 
@@ -244,8 +245,7 @@ class MongoClient(common.BaseObject):
         if not isinstance(port, int):
             raise TypeError("port must be an instance of int")
 
-        logging.warning("host: %s, port: %s" % (host, port))
-        #raise TypeError("host: %s, port: %s" % host, port)
+        #logging.warning("host: %s, port: %s" % (host, port))
         seeds = set()
         username = None
         password = None
@@ -276,10 +276,11 @@ class MongoClient(common.BaseObject):
         # if connecting to a replica set (besides arbiters), or to all
         # available mongoses from the seed list, or to the one standalone
         # mongod.
-        self.__seeds = frozenset(seeds)
+        self.__seeds = frozenset(seeds) # 不能更改的frozenset
         self.__nodes = frozenset()
         self.__member = None  # TODO: Rename to __server.
 
+        #logging.warning("self.__seeds: %s " % (self.__seeds))
         # _pool_class and _event_class are for deep customization of PyMongo,
         # e.g. Motor. SHOULD NOT BE USED BY THIRD-PARTY DEVELOPERS.
         pool_class = kwargs.pop('_pool_class', pool.Pool)
@@ -287,12 +288,12 @@ class MongoClient(common.BaseObject):
 
         options = {}
         for option, value in kwargs.iteritems():
-            option, value = common.validate(option, value)
+            option, value = common.validate(option, value) # **kwargs校验参数
             options[option] = value
         options.update(opts)
 
         self.__max_pool_size = common.validate_positive_integer_or_none(
-            'max_pool_size', max_pool_size)
+            'max_pool_size', max_pool_size) # 默认100
 
         self.__cursor_manager = CursorManager(self)
 
@@ -316,7 +317,7 @@ class MongoClient(common.BaseObject):
                                      "following ssl parameters have been set: "
                                      "%s. Please set `ssl=True` or remove."
                                      % ', '.join(ssl_kwarg_keys))
-
+            # 配了ssl参数但是ssl==False的情况，raise一个配置错误
         if self.__ssl_cert_reqs and not self.__ssl_ca_certs:
             raise ConfigurationError("If `ssl_cert_reqs` is not "
                                      "`ssl.CERT_NONE` then you must "
@@ -374,6 +375,9 @@ class MongoClient(common.BaseObject):
                 # ConnectionFailure makes more sense here than AutoReconnect
                 raise ConnectionFailure(str(e))
 
+        # 几种mongodb auth的验证机制
+        # 默认使用了`MONGODB-CR`, MONGODB3.0之前默认用这
+        # 后来默认SCRAM-SHA-1
         if username:
             mechanism = options.get('authmechanism', 'MONGODB-CR')
             source = (
@@ -390,6 +394,7 @@ class MongoClient(common.BaseObject):
                 self._cache_credentials(source, credentials, _connect)
             except OperationFailure, exc:
                 raise ConfigurationError(str(exc))
+        # Done init 结束
 
     def _cached(self, dbname, coll, index):
         """Test if `index` is cached.
@@ -766,6 +771,10 @@ class MongoClient(common.BaseObject):
             if member.ping_time - fastest < latency / 1000.0]
 
         return random.choice(near_candidates)
+        # random.choice(sequence) Return a random element from the non-empty sequence seq.
+        # If seq is empty, raises IndexError.
+        # 在符合条件的候选者列表中
+         # 你就这么choice了一个啊
 
     def __ensure_member(self):
         """Connect and return a Member instance, or raise AutoReconnect."""

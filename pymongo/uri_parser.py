@@ -1,3 +1,4 @@
+# encoding: utf-8
 # Copyright 2011-2014 MongoDB, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
@@ -14,7 +15,7 @@
 
 
 """Tools to parse and validate a MongoDB URI."""
-
+import logging
 from urllib import unquote_plus
 
 from pymongo.common import validate
@@ -82,7 +83,7 @@ def parse_userinfo(userinfo):
     # No password is expected with GSSAPI authentication.
     if not user:
         raise InvalidURI("The empty string is not valid username.")
-    user = unquote_plus(user)
+    user = unquote_plus(user) # unquote_plus escaped chars (will change `+` to space)
     passwd = unquote_plus(passwd)
 
     return user, passwd
@@ -273,6 +274,7 @@ def parse_uri(uri, default_port=DEFAULT_PORT):
     options = {}
 
     # Check for unix domain sockets in the uri
+    logging.warning("uri_parser, scheme_free %s" % scheme_free)
     if '.sock' in scheme_free:
         host_part, _, path_part = _rpartition(scheme_free, '/')
         try:
@@ -289,6 +291,8 @@ def parse_uri(uri, default_port=DEFAULT_PORT):
 
     if '@' in host_part:
         userinfo, _, hosts = _rpartition(host_part, '@')
+        # py2.4木有string.rpartition,在这自己实现了一个
+        # 将string按给定分隔符(找右边最先出现的位置)，分割成三部分,左侧,sep,右侧
         user, passwd = parse_userinfo(userinfo)
     else:
         hosts = host_part
